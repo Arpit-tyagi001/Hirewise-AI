@@ -1,0 +1,5 @@
+.logoCopy b {
+  background: linear-gradient(135deg, #67e8f9, #2563eb);
+  background-clip: text;
+  color: transparent !important;
+}

@@ -1,0 +1,26 @@
+# Environment variables / secrets
+.env
+backend/.env
+*.env
+
+# Database
+*.db
+hirewise.db
+
+# Node
+node_modules/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build artifacts
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+work/
