@@ -13,3 +13,4 @@ email-validator
 scikit-learn
 numpy
 pandas
+python-multipart
