@@ -10,3 +10,6 @@ PyJWT
 SQLAlchemy
 alembic
 email-validator
+scikit-learn
+numpy
+pandas
