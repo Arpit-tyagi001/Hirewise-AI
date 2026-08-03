@@ -1,120 +1,182 @@
+````markdown
+<div align="center">
+
 # 🚀 HireWise AI
 
-> AI-powered resume analysis and ATS optimization platform that helps candidates evaluate resumes, identify skill gaps, match job descriptions, and improve resumes with AI-powered suggestions while preventing fabricated content.
+### AI-Powered Resume Intelligence Platform
+
+Optimize your resume for ATS, match it against job descriptions, identify missing skills, and enhance existing resume content with AI — **without generating fake experience.**
 
 <p align="center">
-  <a href="https://hirewise-ai-two.vercel.app/">🌐 Live Demo</a> •
-  <a href="https://github.com/Arpit-tyagi001/Hirewise-AI">💻 Source Code</a>
+  <a href="https://hirewise-ai-two.vercel.app/">
+    <img src="https://img.shields.io/badge/Live%20Demo-Visit-success?style=for-the-badge" />
+  </a>
+  <a href="https://hirewise-ai-backend.onrender.com/docs">
+    <img src="https://img.shields.io/badge/API-Swagger-blue?style=for-the-badge" />
+  </a>
 </p>
 
+<p align="center">
+<img src="https://img.shields.io/badge/React-19-blue?logo=react"/>
+<img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript"/>
+<img src="https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi"/>
+<img src="https://img.shields.io/badge/Python-3.12-yellow?logo=python"/>
+<img src="https://img.shields.io/badge/Vite-Build-purple?logo=vite"/>
+<img src="https://img.shields.io/badge/TailwindCSS-4-38B2AC?logo=tailwind-css"/>
+<img src="https://img.shields.io/badge/AI-Groq-orange"/>
+</p>
+
+</div>
+
 ---
 
-## 📖 Overview
+# 📖 Overview
 
-HireWise AI is an intelligent resume analysis platform built to help job seekers create stronger resumes without compromising authenticity.
+Recruiters spend only a few seconds reviewing each resume, while Applicant Tracking Systems (ATS) filter thousands of applications before a recruiter even sees them.
 
-Instead of generating unrealistic or fabricated achievements, HireWise AI focuses on improving the quality of existing content through AI-assisted rewriting, ATS scoring, job description matching, and actionable recommendations.
+**HireWise AI** is an AI-powered resume intelligence platform designed to help candidates improve their resumes through intelligent analysis instead of blind keyword stuffing.
 
-The platform combines modern full-stack development with AI to deliver a professional resume optimization experience.
+Unlike many AI resume tools that generate unrealistic achievements, HireWise AI focuses on **improving existing content while preserving authenticity**. Every AI suggestion is designed to enhance clarity, readability, and ATS compatibility without fabricating experience.
 
 ---
 
-## ✨ Features
+# ✨ Key Features
 
-### 📄 AI Resume Analysis
-- Resume parsing from PDF and DOCX
+## 📄 Resume Analysis
+
+- Upload PDF or DOCX resumes
+- Intelligent resume parsing
 - ATS compatibility analysis
-- Resume quality scoring
-- Section-wise evaluation
+- Overall resume quality score
+- Section-wise feedback
 
-### 🎯 Job Description Matching
+---
+
+## 🎯 Job Description Matching
+
 - Compare resume against any job description
-- Identify missing skills
-- Skill gap analysis
+- Skill gap detection
+- Keyword coverage analysis
 - Match percentage calculation
+- Personalized improvement suggestions
 
-### 🤖 AI Resume Enhancement
-- Rewrite existing resume bullet points
-- Improve clarity and impact
-- Maintain factual accuracy
-- Built-in guardrails to prevent fabricated achievements
+---
 
-### 📊 Analytics Dashboard
+## 🤖 AI Resume Rewriter
+
+One of HireWise AI's core features.
+
+Instead of creating fake achievements, the AI:
+
+- Rewrites existing bullet points
+- Improves readability
+- Makes content more impactful
+- Preserves factual accuracy
+- Prevents fabricated experience using AI guardrails
+
+---
+
+## 📊 Smart Dashboard
+
 - Resume insights
-- ATS score visualization
-- Skill analysis
-- Personalized recommendations
-
-### 🔐 User Features
-- Authentication
-- Secure resume uploads
-- Resume history
-- Responsive interface
-- Dark & Light mode
+- ATS Score
+- Match Percentage
+- Skill Analysis
+- Improvement Suggestions
 
 ---
 
-# 🏗️ Tech Stack
+## 🌙 Modern User Experience
 
-## Frontend
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-
-## Backend
-
-- FastAPI
-- Python
-- SQLAlchemy
-- SQLite
-
-## AI
-
-- Groq API
-- LLM-powered Resume Analysis
-- Prompt Engineering
-- Resume Parsing
-- Job Description Matching
-
-## Deployment
-
-Frontend
-- Vercel
-
-Backend
-- Render
+- Responsive UI
+- Light & Dark Mode
+- Fast and intuitive workflow
+- Professional SaaS-inspired design
 
 ---
 
-# ⚙️ Architecture
+# 💡 Why HireWise AI?
 
-```
-React Frontend
-       │
-       ▼
- FastAPI Backend
-       │
-       ▼
- Resume Parser
-       │
-       ▼
- AI Analysis Engine
-       │
-       ▼
- ATS Scoring
-       │
-       ▼
- JD Matching
-       │
-       ▼
- Resume Rewriter
+Many resume tools prioritize keyword stuffing or generate content that candidates have never actually done.
+
+HireWise AI takes a different approach.
+
+Our goal is to help candidates present their **real experience in the best possible way**, ensuring resumes remain authentic while significantly improving ATS performance and readability.
+
+---
+
+# 🏗️ System Architecture
+
+```text
+                Resume Upload
+                      │
+                      ▼
+             Resume Parser Engine
+                      │
+                      ▼
+             AI Analysis Pipeline
+                      │
+     ┌────────────────┼─────────────────┐
+     │                │                 │
+     ▼                ▼                 ▼
+ ATS Analysis     JD Matching     Resume Rewriter
+     │                │                 │
+     └────────────────┼─────────────────┘
+                      │
+                      ▼
+            Smart Recommendation Engine
+                      │
+                      ▼
+                 User Dashboard
 ```
 
 ---
 
-# 🚀 Getting Started
+# 🛠 Tech Stack
+
+| Layer | Technology |
+|---------|------------|
+| Frontend | React, TypeScript, Vite |
+| Styling | Tailwind CSS |
+| Backend | FastAPI, Python |
+| Database | SQLite, SQLAlchemy |
+| Authentication | JWT |
+| AI | Groq API, LLM |
+| Resume Parsing | PyPDF, python-docx |
+| Deployment | Vercel + Render |
+
+---
+
+# 📂 Project Structure
+
+```text
+HireWise-AI
+│
+├── backend/
+│   ├── Authentication
+│   ├── Resume Parser
+│   ├── ATS Engine
+│   ├── JD Matcher
+│   ├── Resume Rewriter
+│   ├── AI Integration
+│   └── API Routes
+│
+├── src/
+│   ├── Components
+│   ├── Pages
+│   ├── Hooks
+│   ├── Services
+│   ├── Context
+│   └── Assets
+│
+├── public/
+├── dist/
+└── README.md
+```
+
+---
+
+# 🚀 Local Development
 
 ## Clone Repository
 
@@ -124,17 +186,23 @@ git clone https://github.com/Arpit-tyagi001/Hirewise-AI.git
 cd Hirewise-AI
 ```
 
+---
+
 ## Install Frontend
 
 ```bash
 npm install
 ```
 
-## Run Frontend
+---
+
+## Start Frontend
 
 ```bash
 npm run dev
 ```
+
+---
 
 ## Backend
 
@@ -144,89 +212,111 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload
 ```
 
----
-
-# 📂 Project Structure
+Backend runs on
 
 ```
-HireWise-AI/
+http://localhost:8000
+```
 
-backend/
-    AI Engine
-    Resume Parser
-    Authentication
-    API Routes
-    Database
+Swagger Documentation
 
-src/
-    Components
-    Pages
-    Hooks
-    Utilities
-
-public/
-
-assets/
-
+```
+http://localhost:8000/docs
 ```
 
 ---
 
-# 🌍 Live Deployment
+# 🌐 Deployment
 
-**Frontend**
+## Frontend
+
+**Vercel**
 
 https://hirewise-ai-two.vercel.app/
 
-**Backend API**
+---
+
+## Backend API
+
+**Render**
 
 https://hirewise-ai-backend.onrender.com
 
 ---
 
-# 🎯 Roadmap
+# 📸 Screenshots
 
-- User Authentication
-- Resume Version History
-- Cover Letter Generator
-- AI Interview Preparation
-- Company-wise ATS Templates
-- Resume Benchmarking
-- Portfolio Analysis
-- Recruiter Dashboard
+> Replace these placeholders with actual screenshots.
 
----
-
-# 💡 Why HireWise AI?
-
-Unlike many AI resume builders that generate unrealistic content, HireWise AI prioritizes authenticity.
-
-Our AI assists users by improving existing resume content while ensuring that suggestions remain grounded in the candidate's actual experience, helping users create stronger resumes without misleading recruiters.
+- 🏠 Landing Page
+- 📄 Resume Upload
+- 📊 ATS Analysis
+- 🎯 Job Description Matching
+- 🤖 Resume Rewriter
+- 📈 Dashboard
 
 ---
 
-# 📸 Preview
+# 🗺 Roadmap
 
-> Add screenshots or GIFs of:
->
-> - Landing Page
-> - Dashboard
-> - Resume Upload
-> - ATS Analysis
-> - JD Matching
-> - AI Resume Rewrite
+## Completed
+
+- [x] Resume Parsing
+- [x] ATS Analysis
+- [x] Job Description Matching
+- [x] Resume Rewriter
+- [x] AI Guardrails
+- [x] REST API
+- [x] Responsive UI
+
+## Upcoming
+
+- [ ] User Authentication
+- [ ] Resume History
+- [ ] Cover Letter Generator
+- [ ] AI Interview Preparation
+- [ ] Resume Version Control
+- [ ] Recruiter Dashboard
+- [ ] Portfolio Analyzer
+- [ ] Multi-language Resume Support
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+If you'd like to improve HireWise AI:
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Open a Pull Request
 
 ---
 
 # 👨‍💻 Author
 
-**Arpit Tyagi**
+## Arpit Tyagi
 
-- GitHub: https://github.com/Arpit-tyagi001
-- LinkedIn: *(Add your LinkedIn URL)*
+Computer Science Engineering Student | Full Stack Developer | AI/ML Enthusiast
+
+- 💼 LinkedIn: https://www.linkedin.com/in/arpit-tyagi1000/
+- 💻 GitHub: https://github.com/Arpit-tyagi001
 
 ---
 
-## ⭐ Support
+# ⭐ Support
 
-If you found this project useful, consider giving it a ⭐ on GitHub.
+If you found this project useful, please consider giving it a **⭐ Star** on GitHub.
+
+It motivates further development and helps others discover the project.
+
+---
+
+## 📜 License
+
+This project is released under the **MIT License**.
+
+Feel free to use, modify, and contribute.
+````
