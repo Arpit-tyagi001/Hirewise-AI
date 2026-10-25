@@ -45,9 +45,26 @@ def test_api_endpoints():
     assert upload_res["success"] is True
     print("[SUCCESS] POST /upload PASSED")
 
-    # 3. Analyze Endpoint
+    # Register a test user for authenticated endpoints
+    import time
+    ts = int(time.time())
+    reg_res = client.post("/auth/register", json={
+        "email": f"api_test_{ts}@example.com",
+        "password": "SecurePassword123!",
+        "full_name": "API Test User"
+    })
+    assert reg_res.status_code == 200, f"Registration failed: {reg_res.text}"
+    token = reg_res.json()["access_token"]
+    auth_headers = {"Authorization": f"Bearer {token}"}
+    print("[SUCCESS] POST /auth/register PASSED")
+
+    # 3. Analyze Endpoint (Authenticated)
     with open(test_docx_path, "rb") as f:
-        response = client.post("/analyze", files={"file": ("sample_api_test.docx", f, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")})
+        response = client.post(
+            "/analyze",
+            files={"file": ("sample_api_test.docx", f, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+            headers=auth_headers
+        )
     assert response.status_code == 200, f"Analyze failed: {response.text}"
     analyze_res = response.json()
     analysis_id = analyze_res["id"]
@@ -58,21 +75,21 @@ def test_api_endpoints():
         "analysis_id": analysis_id,
         "job_description": "We are seeking a Senior Backend Engineer proficient in Python, FastAPI, PostgreSQL, Docker, and AWS."
     }
-    response = client.post("/match-jd", json=jd_payload)
+    response = client.post("/match-jd", json=jd_payload, headers=auth_headers)
     assert response.status_code == 200, f"Match JD failed: {response.text}"
     match_res = response.json()
     print(f"[SUCCESS] POST /match-jd PASSED (Match score: {match_res['match_result']['match_percentage']}%)")
 
     # 5. Get History Endpoint
-    response = client.get("/history")
-    assert response.status_code == 200, "History failed"
+    response = client.get("/history", headers=auth_headers)
+    assert response.status_code == 200, f"History failed: {response.text}"
     history = response.json()
     assert len(history) > 0
     print(f"[SUCCESS] GET /history PASSED ({len(history)} records found)")
 
     # 6. Get Analysis by ID
-    response = client.get(f"/analysis/{analysis_id}")
-    assert response.status_code == 200
+    response = client.get(f"/analysis/{analysis_id}", headers=auth_headers)
+    assert response.status_code == 200, f"Get analysis failed: {response.text}"
     rec = response.json()
     assert rec["id"] == analysis_id
     print(f"[SUCCESS] GET /analysis/{analysis_id} PASSED")

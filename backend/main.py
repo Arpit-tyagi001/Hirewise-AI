@@ -79,7 +79,7 @@ app = FastAPI(
 app.add_middleware(LimitUploadSizeMiddleware, max_upload_size=MAX_FILE_SIZE)
 
 # Configurable CORS origins via FRONTEND_URL environment variable
-frontend_env = os.getenv("FRONTEND_URL", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000")
+frontend_env = os.getenv("FRONTEND_URL", "https://hirewise-ai-two.vercel.app,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000")
 allowed_origins = [url.strip() for url in frontend_env.split(",") if url.strip()]
 
 app.add_middleware(

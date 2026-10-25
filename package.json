@@ -3,7 +3,13 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "tsc -b && vite build", "preview": "vite preview" },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "backend": "python main.py",
+    "dev:all": "concurrently \"npm run dev\" \"npm run backend\""
+  },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
     "lucide-react": "latest",
@@ -11,5 +17,11 @@
     "react-dom": "latest",
     "recharts": "latest"
   },
-  "devDependencies": { "@types/react": "latest", "@types/react-dom": "latest", "typescript": "latest", "vite": "latest" }
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "concurrently": "^10.0.6",
+    "typescript": "latest",
+    "vite": "latest"
+  }
 }
