@@ -18,7 +18,8 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from io import BytesIO
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Request, UploadFile, status
+from backend.resume_parser import extract_text_from_pdf
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -281,7 +282,21 @@ def validate_file_security(filename: str, content: bytes) -> str:
 def health_check():
     return {"status": "ok", "service": "HireWise AI Resume Analyzer API", "version": "1.1.0"}
 
+@app.post("/upload")
+async def upload_resume(file: UploadFile):
+    # 1. We extract the text and structured data using our parser
+    parsed_data = await extract_text_from_pdf(file)
+    extracted_text = parsed_data.get("raw_text", "")
 
+    # 👉 2. PASTE OUR NEW GUARDRAIL HERE
+    if len(extracted_text.strip()) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="We couldn't read your resume. Please ensure it is a text-based document and not a scanned image."
+        )
+
+    # 3. The rest of your existing upload logic continues...
+    return {"message": "Resume parsed successfully", "data": parsed_data}
 @app.post("/auth/register", response_model=AuthTokenResponse, tags=["Authentication"])
 def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     """Register a new user account and return JWT access token."""
