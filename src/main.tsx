@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import './styles.css';
 import './motion.css';
+import { Toaster } from 'react-hot-toast';
 
 // Components & Pages
 import { AppShell } from './components/AppShell';
@@ -70,7 +71,9 @@ function AppLayout() {
 
  return (
     <div className="app font-sans antialiased text-slate-100 min-h-screen">
-      
+      <Toaster
+      position="bottom-right" toastOptions={{className: 'dark:bg-slate-800 dark:text-white', duration:3000}}/>
+      {/* Public Navbar (hidden inside app pages) */}
       {!isAppPage && (
         <Navbar 
           page="home" 
@@ -83,7 +86,7 @@ function AppLayout() {
         />
       )}
 
-      {/* Removed the <AppShell> wrapper here! Let the routes render directly. */}
+      {/* App pages handle their own <AppShell> layout internally */}
       <Routes>
         <Route path="/" element={<Home go={go as any} />} />
         <Route path="/pricing" element={<Pricing go={go as any} />} />
@@ -95,11 +98,13 @@ function AppLayout() {
         <Route path="/history" element={<HistoryView go={go as any} onSelectAnalysis={setCurrentAnalysis} currentUser={currentUser} onOpenAuthModal={() => setAuthModalOpen(true)} />} />
       </Routes>
 
+      {/* Global Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} onAuthSuccess={(user, token) => {
         localStorage.setItem('hirewise_token', token);
         setCurrentUser(user);
         setAuthModalOpen(false);
-      }} />
+      }}
+       />
     </div>
   );
 }

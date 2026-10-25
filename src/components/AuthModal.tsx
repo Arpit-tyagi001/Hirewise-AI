@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
 import { Button } from './Button';
 import { loginUser, registerUser, User } from '../services/api';
-
+import toast from 'react-hot-toast';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,13 +28,16 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
       if (isRegister) {
         const data = await registerUser({ email, password, full_name: fullName });
         onAuthSuccess(data.user, data.access_token);
+        toast.success("Account created Succcessfully!");
       } else {
         const data = await loginUser({ email, password });
         onAuthSuccess(data.user, data.access_token);
+        toast.success("Welcome back!");
       }
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Authentication failed.');
+      toast.error(err.message || 'Authentication failed.');
     } finally {
       setLoading(false);
     }
