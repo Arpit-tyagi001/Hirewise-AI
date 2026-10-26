@@ -26,6 +26,8 @@ export interface AnalysisRecord {
   section_scores: Record<string, { score: number; max: number }>;
   suggestions: Array<{ type: string; priority: string; category: string; title: string; message: string }>;
   jd_match_data?: any;
+  cover_letter_data?: any;
+  interview_prep_data?: any;
   created_at?: string;
 }
 
@@ -139,12 +141,16 @@ export async function matchJobDescription(analysisId: number, jobDescription: st
   return data;
 }
 
-export async function rewriteResumeBullets(analysisId: number, jobDescription: string) {
+export async function rewriteResumeBullets(analysisId: number, jobDescription: string, apiKey?: string) {
   const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
   const res = await fetch(`${API_BASE_URL}/rewrite-resume`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ analysis_id: analysisId, job_description: jobDescription })
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      job_description: jobDescription,
+      api_key: apiKey || undefined
+    })
   });
 
   const data = await res.json();
@@ -166,4 +172,80 @@ export async function exportTailoredResume(analysisId: number, acceptedRewrites:
     throw new Error('Failed to generate tailored DOCX export.');
   }
   return res.blob();
+}
+
+export async function generateCoverLetter(
+  analysisId: number,
+  jobDescription: string,
+  companyName?: string,
+  jobTitle?: string,
+  tone?: string,
+  apiKey?: string
+) {
+  const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
+  const res = await fetch(`${API_BASE_URL}/generate-cover-letter`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      job_description: jobDescription,
+      company_name: companyName || undefined,
+      job_title: jobTitle || undefined,
+      tone: tone || 'professional',
+      api_key: apiKey || undefined
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || 'Failed to generate cover letter.');
+  }
+  return data;
+}
+
+export async function exportCoverLetter(
+  analysisId: number,
+  coverLetterText: string,
+  companyName?: string,
+  jobTitle?: string
+) {
+  const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
+  const res = await fetch(`${API_BASE_URL}/export-cover-letter`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      cover_letter_text: coverLetterText,
+      company_name: companyName || 'Hiring Team',
+      job_title: jobTitle || 'Target Role'
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to generate cover letter DOCX export.');
+  }
+  return res.blob();
+}
+
+export async function generateInterviewPrep(
+  analysisId: number,
+  jobDescription: string,
+  apiKey?: string
+) {
+  const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
+  const res = await fetch(`${API_BASE_URL}/interview-prep`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      job_description: jobDescription,
+      api_key: apiKey || undefined
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.detail || 'Failed to generate interview preparation questions.');
+  }
+  return data;
 }

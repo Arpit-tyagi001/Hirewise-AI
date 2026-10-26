@@ -50,6 +50,8 @@ from jd_matcher import JDMatcher
 import models
 from resume_parser import ResumeParser
 from rewriter import ResumeRewriter
+from cover_letter_generator import CoverLetterGenerator
+from interview_prep_generator import InterviewPrepGenerator
 
 # Security Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB limit
@@ -147,7 +149,31 @@ class AnalysisResponse(BaseModel):
     section_scores: Dict[str, Any]
     suggestions: List[Dict[str, Any]]
     jd_match_data: Optional[Dict[str, Any]] = None
+    cover_letter_data: Optional[Dict[str, Any]] = None
+    interview_prep_data: Optional[Dict[str, Any]] = None
     created_at: Optional[str] = None
+
+
+class GenerateCoverLetterRequest(BaseModel):
+    analysis_id: int = Field(..., description="ID of existing resume analysis record")
+    job_description: str = Field(..., description="Target Job Description text")
+    company_name: Optional[str] = Field("Hiring Team", description="Target Company Name")
+    job_title: Optional[str] = Field(None, description="Target Job Title")
+    tone: Optional[str] = Field("professional", description="Tone of cover letter")
+    api_key: Optional[str] = Field(None, description="Optional Groq API key")
+
+
+class ExportCoverLetterRequest(BaseModel):
+    analysis_id: int = Field(..., description="ID of existing resume analysis record")
+    company_name: Optional[str] = Field("Hiring Team", description="Target Company Name")
+    job_title: Optional[str] = Field("Target Role", description="Target Job Title")
+    cover_letter_text: str = Field(..., description="Full text of the cover letter to export")
+
+
+class InterviewPrepRequest(BaseModel):
+    analysis_id: int = Field(..., description="ID of existing resume analysis record")
+    job_description: str = Field(..., description="Target Job Description text")
+    api_key: Optional[str] = Field(None, description="Optional Groq API key")
 
 
 class RewriteResumeRequest(BaseModel):
@@ -637,3 +663,106 @@ def get_rewrite_sessions(
         models.ResumeRewriteSession.user_id == current_user.id
     ).order_by(models.ResumeRewriteSession.created_at.desc()).all()
     return [s.to_dict() for s in sessions]
+
+
+@app.post("/generate-cover-letter", tags=["Cover Letter Generator"])
+def generate_cover_letter(
+    payload: GenerateCoverLetterRequest,
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """POST /generate-cover-letter: Generates an authentic, tailored cover letter citing candidate background."""
+    query = db.query(models.ResumeAnalysis).filter(models.ResumeAnalysis.id == payload.analysis_id)
+    if current_user:
+        query = query.filter((models.ResumeAnalysis.user_id == current_user.id) | (models.ResumeAnalysis.user_id.is_(None)))
+    analysis = query.first()
+    if not analysis:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Analysis record #{payload.analysis_id} not found.")
+
+    generator = CoverLetterGenerator(api_key=payload.api_key)
+    result = generator.generate(
+        parsed_resume=analysis.parsed_data,
+        job_description=payload.job_description,
+        company_name=payload.company_name,
+        job_title=payload.job_title,
+        tone=payload.tone or "professional"
+    )
+
+    analysis.cover_letter_data = result
+    db.commit()
+
+    return {
+        "success": True,
+        "analysis_id": analysis.id,
+        "cover_letter": result
+    }
+
+
+@app.post("/export-cover-letter", tags=["Cover Letter Generator"])
+def export_cover_letter(
+    payload: ExportCoverLetterRequest,
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """POST /export-cover-letter: Generates and streams a formatted DOCX cover letter document."""
+    query = db.query(models.ResumeAnalysis).filter(models.ResumeAnalysis.id == payload.analysis_id)
+    if current_user:
+        query = query.filter((models.ResumeAnalysis.user_id == current_user.id) | (models.ResumeAnalysis.user_id.is_(None)))
+    analysis = query.first()
+    if not analysis:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Analysis record #{payload.analysis_id} not found.")
+
+    generator = CoverLetterGenerator()
+    doc = generator.export_docx(
+        candidate_name=analysis.candidate_name or "Candidate",
+        candidate_email=analysis.candidate_email or "",
+        candidate_phone=analysis.parsed_data.get("phone", ""),
+        candidate_location=analysis.parsed_data.get("location", ""),
+        company_name=payload.company_name or "Hiring Organization",
+        job_title=payload.job_title or "Target Role",
+        cover_letter_text=payload.cover_letter_text
+    )
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    safe_candidate = re.sub(r'[^a-zA-Z0-9_-]', '_', analysis.candidate_name or 'Candidate')
+    safe_company = re.sub(r'[^a-zA-Z0-9_-]', '_', payload.company_name or 'Company')
+    filename = f"Cover_Letter_{safe_candidate}_{safe_company}.docx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
+
+@app.post("/interview-prep", tags=["AI Interview Prep"])
+def generate_interview_prep(
+    payload: InterviewPrepRequest,
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """POST /interview-prep: Generates structured Technical, Skill Gap, and Behavioral STAR questions."""
+    query = db.query(models.ResumeAnalysis).filter(models.ResumeAnalysis.id == payload.analysis_id)
+    if current_user:
+        query = query.filter((models.ResumeAnalysis.user_id == current_user.id) | (models.ResumeAnalysis.user_id.is_(None)))
+    analysis = query.first()
+    if not analysis:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Analysis record #{payload.analysis_id} not found.")
+
+    generator = InterviewPrepGenerator(api_key=payload.api_key)
+    result = generator.generate(
+        parsed_resume=analysis.parsed_data,
+        job_description=payload.job_description
+    )
+
+    analysis.interview_prep_data = result
+    db.commit()
+
+    return {
+        "success": True,
+        "analysis_id": analysis.id,
+        "interview_prep": result
+    }

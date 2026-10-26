@@ -94,6 +94,63 @@ def test_api_endpoints():
     assert rec["id"] == analysis_id
     print(f"[SUCCESS] GET /analysis/{analysis_id} PASSED")
 
+    # 7. Rewrite Resume Endpoint
+    rw_payload = {
+        "analysis_id": analysis_id,
+        "job_description": "We are seeking a Senior Backend Engineer proficient in Python, FastAPI, and PostgreSQL."
+    }
+    response = client.post("/rewrite-resume", json=rw_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Rewrite resume failed: {response.text}"
+    rw_res = response.json()
+    assert "rewrites" in rw_res and len(rw_res["rewrites"]) > 0
+    print(f"[SUCCESS] POST /rewrite-resume PASSED ({len(rw_res['rewrites'])} rewrites generated)")
+
+    # 8. Export Tailored Resume (.docx)
+    exp_payload = {
+        "analysis_id": analysis_id,
+        "accepted_rewrites": rw_res["rewrites"]
+    }
+    response = client.post("/export-tailored-resume", json=exp_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Export tailored resume failed: {response.text}"
+    assert len(response.content) > 1000
+    print(f"[SUCCESS] POST /export-tailored-resume PASSED ({len(response.content)} bytes)")
+
+    # 9. Generate Cover Letter Endpoint
+    cl_payload = {
+        "analysis_id": analysis_id,
+        "job_description": "We are seeking a Senior Backend Engineer proficient in Python, FastAPI, and PostgreSQL at Stripe.",
+        "company_name": "Stripe",
+        "job_title": "Senior Backend Engineer"
+    }
+    response = client.post("/generate-cover-letter", json=cl_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Generate cover letter failed: {response.text}"
+    cl_res = response.json()
+    assert cl_res["success"] is True and len(cl_res["cover_letter"]["cover_letter_text"]) > 200
+    print(f"[SUCCESS] POST /generate-cover-letter PASSED ({len(cl_res['cover_letter']['cover_letter_text'])} chars)")
+
+    # 10. Export Cover Letter (.docx)
+    exp_cl_payload = {
+        "analysis_id": analysis_id,
+        "company_name": "Stripe",
+        "job_title": "Senior Backend Engineer",
+        "cover_letter_text": cl_res["cover_letter"]["cover_letter_text"]
+    }
+    response = client.post("/export-cover-letter", json=exp_cl_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Export cover letter failed: {response.text}"
+    assert len(response.content) > 1000
+    print(f"[SUCCESS] POST /export-cover-letter PASSED ({len(response.content)} bytes)")
+
+    # 11. Generate Interview Prep Endpoint
+    ip_payload = {
+        "analysis_id": analysis_id,
+        "job_description": "We are seeking a Senior Backend Engineer proficient in Python, FastAPI, React, and Kubernetes at Stripe."
+    }
+    response = client.post("/interview-prep", json=ip_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Interview prep failed: {response.text}"
+    ip_res = response.json()
+    assert ip_res["success"] is True and len(ip_res["interview_prep"]["questions"]) > 0
+    print(f"[SUCCESS] POST /interview-prep PASSED ({len(ip_res['interview_prep']['questions'])} questions generated)")
+
     print("\nALL FASTAPI ENDPOINT TESTS PASSED SUCCESSFULLY!")
 
 

@@ -52,6 +52,8 @@ class ResumeAnalysis(Base):
     
     # Optional JD Match results
     jd_match_data = Column(JSON, nullable=True)
+    cover_letter_data = Column(JSON, nullable=True)
+    interview_prep_data = Column(JSON, nullable=True)
     
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
@@ -72,6 +74,8 @@ class ResumeAnalysis(Base):
             "section_scores": self.section_scores,
             "suggestions": self.suggestions,
             "jd_match_data": self.jd_match_data,
+            "cover_letter_data": self.cover_letter_data,
+            "interview_prep_data": self.interview_prep_data,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
 
