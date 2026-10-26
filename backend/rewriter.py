@@ -299,7 +299,7 @@ CRITICAL RULES - YOU MUST OBEY THESE STRICTLY:
             try:
                 from groq import Groq
                 client = Groq(api_key=self.groq_api_key)
-                groq_model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+                groq_model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
                 completion = client.chat.completions.create(
                     model=groq_model,
                     messages=messages,

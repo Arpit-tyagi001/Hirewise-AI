@@ -20,7 +20,7 @@ export function About({ go }: { go: (p: Page) => void }) {
             <div>
               <h3 style={{ margin: '0 0 6px', fontSize: 18 }}>Rule-Based & LLM Hybrid Engine</h3>
               <p style={{ margin: 0, color: '#94a3b8', fontSize: 14 }}>
-                HireWise AI combines deterministic Python NLP rules (weak verb upgrades, keyword matching) with Groq LLM fallback (<code style={{ color: '#60a5fa' }}>llama-3.3-70b-versatile</code>). Hard fabrication guardrails ensure zero hallucinated metrics or skills.
+                HireWise AI combines deterministic Python NLP rules (weak verb upgrades, keyword matching) with Groq LLM fallback (<code style={{ color: '#60a5fa' }}>openai/gpt-oss-120b</code>). Hard fabrication guardrails ensure zero hallucinated metrics or skills.
               </p>
             </div>
           </div>

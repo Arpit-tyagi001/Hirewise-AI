@@ -115,7 +115,7 @@ flowchart TD
 | **Backend** | Python 3.10+, FastAPI, Uvicorn, Pydantic | High-performance asynchronous REST API |
 | **Parsing** | `pypdf`, `python-docx` | Native text extraction from binary resume formats |
 | **NLP & ML** | `scikit-learn`, `numpy`, `pandas` | TF-IDF vectorization, cosine similarity, keyword frequency |
-| **AI / LLM** | Groq (`llama-3.3-70b-versatile`), OpenAI fallback | Context-aware bullet rewriting with anti-hallucination guardrails |
+| **AI / LLM** | Groq (`openai/gpt-oss-120b`), OpenAI fallback | Context-aware bullet rewriting with anti-hallucination guardrails |
 | **Database** | SQLAlchemy ORM, Alembic, SQLite / PostgreSQL | User accounts, analysis history, rewrite sessions |
 | **Security** | PyJWT, Bcrypt, Starlette Middleware | JWT bearer auth, password salting, file size & MIME checking |
 
