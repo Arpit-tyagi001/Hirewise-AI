@@ -17,9 +17,17 @@ backend_dir = str(Path(__file__).parent)
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+from dotenv import load_dotenv
+
+# Force-load environment variables, prioritizing backend/.env overrides
+load_dotenv(Path(__file__).parent / ".env", override=True)
+load_dotenv(Path(__file__).parent.parent / ".env", override=True)
+
+# Add this temporarily to verify the correct key is loaded
+print(f"DEBUG KEY: {str(os.getenv('GROQ_API_KEY'))[:8]}...")
+
 from io import BytesIO
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Request, UploadFile, status
-from backend.resume_parser import extract_text_from_pdf
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.security import OAuth2PasswordBearer
@@ -29,6 +37,12 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+
+import slowapi
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from ats_scorer import ATSScorer
 from database import get_db, init_db
@@ -139,6 +153,7 @@ class AnalysisResponse(BaseModel):
 class RewriteResumeRequest(BaseModel):
     analysis_id: int = Field(..., description="ID of existing resume analysis record")
     job_description: str = Field(..., description="Target Job Description text to tailor against")
+    api_key: Optional[str] = Field(None, description="Optional Groq API key")
 
 
 class ExportTailoredResumeRequest(BaseModel):
@@ -282,21 +297,6 @@ def validate_file_security(filename: str, content: bytes) -> str:
 def health_check():
     return {"status": "ok", "service": "HireWise AI Resume Analyzer API", "version": "1.1.0"}
 
-@app.post("/upload")
-async def upload_resume(file: UploadFile):
-    # 1. We extract the text and structured data using our parser
-    parsed_data = await extract_text_from_pdf(file)
-    extracted_text = parsed_data.get("raw_text", "")
-
-    # 👉 2. PASTE OUR NEW GUARDRAIL HERE
-    if len(extracted_text.strip()) < 50:
-        raise HTTPException(
-            status_code=400,
-            detail="We couldn't read your resume. Please ensure it is a text-based document and not a scanned image."
-        )
-
-    # 3. The rest of your existing upload logic continues...
-    return {"message": "Resume parsed successfully", "data": parsed_data}
 @app.post("/auth/register", response_model=AuthTokenResponse, tags=["Authentication"])
 def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     """Register a new user account and return JWT access token."""
@@ -362,6 +362,13 @@ async def upload_resume(file: UploadFile = File(...)):
         file_type = validate_file_security(file_name, content)
         parsed_data = parser.parse(content, file_type=file_type)
 
+        extracted_text = parsed_data.get("raw_text", "")
+        if len(extracted_text.strip()) < 50:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No readable text detected. Please ensure this document contains selectable text and is not a scanned image."
+            )
+
         return {
             "success": True,
             "file_name": file_name,
@@ -395,6 +402,13 @@ async def analyze_resume(
 
         # 1. Parse
         parsed_data = parser.parse(content, file_type=file_type)
+
+        extracted_text = parsed_data.get("raw_text", "")
+        if len(extracted_text.strip()) < 50:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No readable text detected. Please ensure this document contains selectable text and is not a scanned image."
+            )
 
         # 2. ATS Score
         ats_result = scorer.evaluate(parsed_data)
@@ -522,13 +536,17 @@ def delete_analysis_by_id(
     db.commit()
     return {"success": True, "message": f"Analysis {analysis_id} deleted successfully."}
 
+# Initialize the limiter
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.post("/rewrite-resume", tags=["Resume Rewriter"])
-def rewrite_resume(
+@limiter.limit("10/minute")
+async def rewrite_resume(request: Request,
     payload: RewriteResumeRequest,
     current_user: Optional[models.User] = Depends(get_optional_current_user),
-    db: Session = Depends(get_db)
-):
+    db: Session = Depends(get_db)):
     """
     POST /rewrite-resume: Bullet-by-bullet JD-aware resume tailoring engine.
     Uses rule-based NLP + LLM with HARD CONSTRAINTS against inventing candidate content.
@@ -545,7 +563,7 @@ def rewrite_resume(
             detail=f"Resume analysis record #{payload.analysis_id} not found."
         )
 
-    rewriter = ResumeRewriter()
+    rewriter = ResumeRewriter(api_key=payload.api_key)
     rewrites = rewriter.rewrite_resume_bullets(
         parsed_resume=analysis.parsed_data,
         job_description=payload.job_description

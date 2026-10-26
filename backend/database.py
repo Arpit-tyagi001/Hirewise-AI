@@ -6,6 +6,11 @@ Supports PostgreSQL with fallback to SQLite for local development.
 import os
 from pathlib import Path
 from typing import Generator
+from dotenv import load_dotenv
+
+# Ensure environment variables are loaded
+load_dotenv(Path(__file__).parent / ".env")
+load_dotenv(Path(__file__).parent.parent / ".env")
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 

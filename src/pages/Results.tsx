@@ -108,7 +108,7 @@ export function Results({ go, analysis, currentUser }: ResultsProps) {
             <div style={{ padding: 16 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span>Overall Skill Alignment</span>
-                <b style={{ color: '#60a5fa' }}>{(jdMatch.match_score || 0).toFixed(1)}%</b>
+                <b style={{ color: '#60a5fa' }}>{((jdMatch.match_percentage ?? jdMatch.match_score) || 0).toFixed(1)}%</b>
               </div>
               <div style={{ display: 'grid', gap: 10 }}>
                 <div>

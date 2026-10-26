@@ -16,11 +16,22 @@ export const RewriterPanel: React.FC<RewriterPanelProps> = ({
   token
 }) => {
   const [jobDescription, setJobDescription] = useState(initialJobDescription);
+  const [apiKey, setApiKey] = useState(localStorage.getItem('hirewise_groq_key') || '');
+  const [showKeyInput, setShowKeyInput] = useState(false);
   const [rewrites, setRewrites] = useState<BulletRewriteItem[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    if (val.trim()) {
+      localStorage.setItem('hirewise_groq_key', val.trim());
+    } else {
+      localStorage.removeItem('hirewise_groq_key');
+    }
+  };
 
   const handleGenerateRewrites = async () => {
     if (!jobDescription.trim()) {
@@ -40,7 +51,8 @@ export const RewriterPanel: React.FC<RewriterPanelProps> = ({
         headers,
         body: JSON.stringify({
           analysis_id: analysisId,
-          job_description: jobDescription
+          job_description: jobDescription,
+          api_key: apiKey.trim() || undefined
         })
       });
 
@@ -175,6 +187,34 @@ export const RewriterPanel: React.FC<RewriterPanelProps> = ({
             {loading ? 'Generating Rewrites...' : 'Generate Tailored Bullet Rewrites'}
           </button>
         </div>
+
+        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: '#ffffff04', borderRadius: 8, border: '1px solid #ffffff0a' }}>
+          <button
+            type="button"
+            onClick={() => setShowKeyInput(!showKeyInput)}
+            style={{ fontSize: 11, color: '#93c5fd', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+          >
+            {showKeyInput ? 'Hide Groq API Key Setting' : '⚙️ Custom Groq API Key (Optional)'}
+          </button>
+          <span style={{ fontSize: 11, color: apiKey ? '#86efac' : '#94a3b8' }}>
+            {apiKey ? '🤖 Custom Groq LLM Enabled' : '⚡ Smart Technical NLP Engine Active'}
+          </span>
+        </div>
+
+        {showKeyInput && (
+          <div style={{ marginTop: 8, background: '#0b1329', border: '1px solid #1e293b', borderRadius: 8, padding: 10 }}>
+            <label style={{ display: 'block', fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>
+              Groq Cloud API Key (Get a free key at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer" style={{ color: '#60a5fa' }}>console.groq.com</a>)
+            </label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={e => handleApiKeyChange(e.target.value)}
+              placeholder="gsk_..."
+              style={{ width: '100%', background: '#020617', border: '1px solid #334155', borderRadius: 6, padding: '6px 10px', color: '#f8fafc', fontSize: 12 }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Generated Bullet Rewrites List */}
