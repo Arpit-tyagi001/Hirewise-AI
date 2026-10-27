@@ -87,6 +87,8 @@ flowchart TD
         Scorer["ATSScorer (10-Dimension Weights)"]
         Matcher["JDMatcher (TF-IDF + Cosine Sim)"]
         Rewriter["ResumeRewriter (Guardrails + Groq/OpenAI)"]
+        CoverLetterGen["CoverLetterGenerator (Smart NLP / Groq)"]
+        InterviewPrepGen["InterviewPrepGenerator (STAR Method)"]
     end
 
     subgraph Storage ["Data Layer"]
@@ -101,6 +103,8 @@ flowchart TD
     FastAPIApp --> Scorer
     FastAPIApp --> Matcher
     FastAPIApp --> Rewriter
+    FastAPIApp --> CoverLetterGen
+    FastAPIApp --> InterviewPrepGen
     FastAPIApp <--> SQLiteDB
     Alembic -.-> SQLiteDB
 ```
@@ -131,14 +135,16 @@ hirewise-ai/
 │   ├── test_resumes/               # Sample PDF & DOCX resumes for testing
 │   ├── alembic.ini                 # Alembic configuration
 │   ├── ats_scorer.py               # 10-dimension ATS scoring engine
+│   ├── cover_letter_generator.py   # Tailored cover letter synthesizer & DOCX builder
 │   ├── database.py                 # SQLAlchemy session management & DB connection
 │   ├── hirewise.db                 # Active SQLite database file
+│   ├── interview_prep_generator.py # Technical, Skill-Gap & Behavioral STAR engine
 │   ├── jd_matcher.py               # Job description TF-IDF gap matcher
 │   ├── main.py                     # FastAPI routes, auth, middleware & handlers
 │   ├── models.py                   # SQLAlchemy ORM models (User, ResumeAnalysis, etc.)
 │   ├── resume_parser.py            # PDF/DOCX parser & skill taxonomy engine
 │   ├── rewriter.py                 # JD-aware bullet rewriter with guardrails
-│   ├── test_api.py                 # API endpoints automated integration test
+│   ├── test_api.py                 # API endpoints automated integration test (12/12)
 │   ├── test_auth.py                # JWT authentication & data isolation test
 │   ├── test_parser.py              # Multi-column & kerning PDF regression test
 │   └── test_security.py            # Magic-byte MIME & DoS payload tests
@@ -147,7 +153,9 @@ hirewise-ai/
 │   ├── components/                 # Reusable UI components
 │   │   ├── AppShell.tsx            # Recruiter workspace layout & sidebar
 │   │   ├── AuthModal.tsx           # Sign-in / Sign-up dialog modal
-│   │   ├── BulletDiffCard.tsx      # Before vs after bullet revision card
+│   │   ├── BulletDiff.tsx          # Before vs after bullet revision card
+│   │   ├── CoverLetterPanel.tsx    # Live editable cover letter generator with DOCX export
+│   │   ├── InterviewPrepPanel.tsx  # Categorized STAR interview question simulator
 │   │   ├── Navbar.tsx              # Top sticky navigation bar
 │   │   ├── RewriterPanel.tsx       # Live JD bullet rewriting workspace
 │   │   ├── ScoreGauge.tsx          # Circular radial ATS score gauge
@@ -296,6 +304,39 @@ Unlike many AI resume tools that generate unrealistic achievements, HireWise AI 
 - Keyword coverage analysis
 - Match percentage calculation
 - Personalized improvement suggestions
+
+---
+
+## ✉️ AI Cover Letter Generator
+
+- Synthesizes compelling, modern cover letters mapped directly to target job requirements
+- Tone controls: Professional & Polished, High-Impact & Confident, Technical & Engineering
+- Live editable in-browser document preview
+- 1-click formatted DOCX export & clipboard copy
+- Strict anti-hallucination constraint: only cites authentic achievements and technologies from resume
+
+---
+
+## 🎯 AI Interview Preparation Suite
+
+- Formulates 6–8 candidate-tailored interview questions targeting technical depth and JD gaps
+- Categorized question tracks:
+  - **Technical Architecture**: In-depth questions on technologies possessed by the candidate
+  - **Skill Gap Strategy**: Tactical questions addressing missing requirements with pivot strategies
+  - **Behavioral STAR**: High-stakes scenarios broken down into Situation, Task, Action, and Result
+- Includes Interviewer Intent / Evaluation Angle callouts and key talking point tags
+- 1-click single-question copy or export of the full interview prep guide
+
+---
+
+## 📦 One-Click Application Kit (.zip Exporter)
+
+- Packages the entire tailored career suite in 1 click:
+  1. `1_Tailored_Resume_[Candidate].docx`
+  2. `2_Cover_Letter_[Candidate]_[Company].docx`
+  3. `3_Interview_Prep_Guide_[Candidate].md`
+  4. `README.txt` (summary manifest with ATS match percentage)
+- Zero disk-leak stream architecture: generated completely in RAM via `io.BytesIO` and streamed as `application/zip`
 
 ---
 
@@ -491,7 +532,7 @@ HireWise AI includes 4 automated test suites covering API functionality, JWT sec
 Run all tests from the root folder:
 
 ```bash
-# 1. Test All FastAPI Endpoints (Health, Upload, Analyze, JD Match, History)
+# 1. Test All 12 FastAPI Endpoints (Health, Upload, Analyze, Match, Rewrites, Cover Letter, Interview Prep, ZIP Bundle)
 python backend/test_api.py
 
 # 2. Test JWT Authentication & Per-User Data Access Isolation
@@ -521,6 +562,10 @@ python backend/test_parser.py
 | `POST` | `/match-jd` | Public / Auth | Calculate TF-IDF & skill overlap against Job Description |
 | `POST` | `/rewrite-resume` | Public / Auth | Generate bullet-by-bullet rewrites tailored to target JD |
 | `POST` | `/export-tailored-resume` | Public / Auth | Download customized `.docx` resume with accepted edits |
+| `POST` | `/generate-cover-letter` | Public / Auth | Generate tailored 4-paragraph cover letter for target role |
+| `POST` | `/export-cover-letter` | Public / Auth | Download formatted `.docx` cover letter document |
+| `POST` | `/interview-prep` | Public / Auth | Generate Technical, Skill Gap & Behavioral STAR interview kit |
+| `POST` | `/export-application-bundle` | Public / Auth | Stream in-memory ZIP bundle (Resume + Cover Letter + Prep Guide) |
 | `GET` | `/history` | Protected | Retrieve all historical analyses belonging to current user |
 | `GET` | `/analysis/{id}` | Protected | Retrieve specific analysis report by ID |
 | `DELETE` | `/analysis/{id}` | Protected | Delete analysis record owned by current user |
