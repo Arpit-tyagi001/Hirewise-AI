@@ -27,6 +27,7 @@ load_dotenv(Path(__file__).parent.parent / ".env", override=True)
 print(f"DEBUG KEY: {str(os.getenv('GROQ_API_KEY'))[:8]}...")
 
 from io import BytesIO
+import zipfile
 from fastapi import APIRouter, Depends, FastAPI, File, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -185,6 +186,14 @@ class RewriteResumeRequest(BaseModel):
 class ExportTailoredResumeRequest(BaseModel):
     analysis_id: int = Field(..., description="ID of existing resume analysis record")
     accepted_rewrites: List[Dict[str, Any]] = Field(..., description="List of accepted bullet point rewrites")
+
+class ExportApplicationBundleRequest(BaseModel):
+    analysis_id: int = Field(..., description="ID of existing resume analysis record")
+    accepted_rewrites: Optional[List[Dict[str, Any]]] = Field(None, description="Optional accepted rewrites for resume")
+    cover_letter_text: Optional[str] = Field(None, description="Custom cover letter text to package")
+    company_name: Optional[str] = Field("Hiring Team", description="Target Company Name")
+    job_title: Optional[str] = Field("Target Role", description="Target Job Title")
+
 
 
 # Helper Auth Functions
@@ -766,3 +775,147 @@ def generate_interview_prep(
         "analysis_id": analysis.id,
         "interview_prep": result
     }
+
+
+@app.post("/export-application-bundle", tags=["Application Bundle"])
+def export_application_bundle(
+    payload: ExportApplicationBundleRequest,
+    current_user: Optional[models.User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    POST /export-application-bundle:
+    Dynamically packages in-memory:
+    1. Tailored Resume (.docx)
+    2. Cover Letter (.docx)
+    3. AI Interview Preparation Guide (.md)
+    into a compressed ZIP archive and streams it directly to the client.
+    """
+    query = db.query(models.ResumeAnalysis).filter(models.ResumeAnalysis.id == payload.analysis_id)
+    if current_user:
+        query = query.filter((models.ResumeAnalysis.user_id == current_user.id) | (models.ResumeAnalysis.user_id.is_(None)))
+    analysis = query.first()
+    if not analysis:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Analysis record #{payload.analysis_id} not found.")
+
+    safe_candidate = re.sub(r'[^a-zA-Z0-9_-]', '_', analysis.candidate_name or 'Candidate')
+    safe_company = re.sub(r'[^a-zA-Z0-9_-]', '_', payload.company_name or 'Company')
+
+    # 1. Build Tailored Resume DOCX in-memory
+    rewriter = ResumeRewriter()
+    resume_doc = rewriter.export_tailored_docx(
+        parsed_resume=analysis.parsed_data,
+        accepted_rewrites=payload.accepted_rewrites or []
+    )
+    resume_buffer = BytesIO()
+    resume_doc.save(resume_buffer)
+    resume_bytes = resume_buffer.getvalue()
+
+    # 2. Build Cover Letter DOCX in-memory
+    cl_generator = CoverLetterGenerator()
+    cl_text = payload.cover_letter_text
+    if not cl_text:
+        if analysis.cover_letter_data and analysis.cover_letter_data.get("cover_letter_text"):
+            cl_text = analysis.cover_letter_data["cover_letter_text"]
+        else:
+            cl_res = cl_generator.generate(
+                parsed_resume=analysis.parsed_data,
+                job_description="Target Role",
+                company_name=payload.company_name,
+                job_title=payload.job_title
+            )
+            cl_text = cl_res.get("cover_letter_text", "")
+
+    cl_doc = cl_generator.export_docx(
+        candidate_name=analysis.candidate_name or "Candidate",
+        candidate_email=analysis.candidate_email or "",
+        candidate_phone=analysis.parsed_data.get("phone", ""),
+        candidate_location=analysis.parsed_data.get("location", ""),
+        company_name=payload.company_name or "Hiring Organization",
+        job_title=payload.job_title or "Target Role",
+        cover_letter_text=cl_text
+    )
+    cl_buffer = BytesIO()
+    cl_doc.save(cl_buffer)
+    cl_bytes = cl_buffer.getvalue()
+
+    # 3. Build Interview Preparation Guide Markdown in-memory
+    prep_data = analysis.interview_prep_data
+    if not prep_data or not prep_data.get("questions"):
+        ip_gen = InterviewPrepGenerator()
+        prep_data = ip_gen.generate(
+            parsed_resume=analysis.parsed_data,
+            job_description="Target Role"
+        )
+
+    questions = prep_data.get("questions", [])
+    md_lines = [
+        f"# AI Interview Preparation Guide",
+        f"**Candidate:** {analysis.candidate_name or 'Candidate'}",
+        f"**Target Role:** {payload.job_title or 'Software Engineer'} at {payload.company_name or 'Company'}",
+        f"**Generated On:** {datetime.now().strftime('%B %d, %Y')}",
+        "",
+        "---",
+        ""
+    ]
+    if prep_data.get("summary"):
+        md_lines.extend([
+            "## Strategy Brief",
+            prep_data["summary"],
+            "",
+            "---",
+            ""
+        ])
+
+    md_lines.append("## Tailored Interview Questions & STAR Frameworks\n")
+    for idx, q in enumerate(questions):
+        cat = q.get("category", "General").title()
+        q_text = q.get("question", "")
+        intent = q.get("intent") or q.get("interviewer_intent", "")
+        star = q.get("star_breakdown") or q.get("star_framework") or {}
+        pts = q.get("talking_points") or q.get("key_talking_points") or []
+
+        md_lines.append(f"### #{idx + 1} [{cat}] {q_text}\n")
+        if intent:
+            md_lines.append(f"> **🎯 Interviewer Intent:** {intent}\n")
+        if star:
+            md_lines.append("#### STAR Method Breakdown:")
+            md_lines.append(f"- **Situation:** {star.get('situation', 'N/A')}")
+            md_lines.append(f"- **Task:** {star.get('task', 'N/A')}")
+            md_lines.append(f"- **Action:** {star.get('action', 'N/A')}")
+            md_lines.append(f"- **Result:** {star.get('result', 'N/A')}\n")
+        if pts:
+            md_lines.append(f"**Key Talking Points:** {', '.join(pts)}\n")
+        md_lines.append("---\n")
+
+    prep_markdown = "\n".join(md_lines)
+    prep_bytes = prep_markdown.encode("utf-8")
+
+    # 4. Package all 3 in-memory streams into a ZIP archive
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr(f"1_Tailored_Resume_{safe_candidate}.docx", resume_bytes)
+        zf.writestr(f"2_Cover_Letter_{safe_candidate}_{safe_company}.docx", cl_bytes)
+        zf.writestr(f"3_Interview_Prep_Guide_{safe_candidate}.md", prep_bytes)
+        readme_content = f"""HireWise AI - Job Application Kit
+Candidate: {analysis.candidate_name or 'Candidate'}
+Target Role: {payload.job_title} at {payload.company_name}
+ATS Match Score: {analysis.ats_score}% ({analysis.ats_level})
+
+Contents of this bundle:
+1. 1_Tailored_Resume_{safe_candidate}.docx - Formatted DOCX resume incorporating your accepted bullet optimizations.
+2. 2_Cover_Letter_{safe_candidate}_{safe_company}.docx - Professional tailored cover letter mapped to company specifications.
+3. 3_Interview_Prep_Guide_{safe_candidate}.md - Custom interview guide featuring technical and behavioral STAR frameworks.
+
+Generated with HireWise AI. Good luck with your application!
+"""
+        zf.writestr("README.txt", readme_content)
+
+    zip_buffer.seek(0)
+    bundle_filename = f"HireWise_JobKit_{safe_candidate}_{safe_company}.zip"
+
+    return StreamingResponse(
+        zip_buffer,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{bundle_filename}"'}
+    )

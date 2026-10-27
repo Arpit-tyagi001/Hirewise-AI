@@ -249,3 +249,31 @@ export async function generateInterviewPrep(
   }
   return data;
 }
+
+export async function exportApplicationBundle(
+  analysisId: number,
+  options?: {
+    acceptedRewrites?: any[];
+    coverLetterText?: string;
+    companyName?: string;
+    jobTitle?: string;
+  }
+): Promise<Blob> {
+  const headers = { ...getAuthHeaders(), 'Content-Type': 'application/json' };
+  const res = await fetch(`${API_BASE_URL}/export-application-bundle`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      accepted_rewrites: options?.acceptedRewrites || undefined,
+      cover_letter_text: options?.coverLetterText || undefined,
+      company_name: options?.companyName || 'Target Company',
+      job_title: options?.jobTitle || 'Target Role'
+    })
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to generate application zip bundle.');
+  }
+  return res.blob();
+}

@@ -151,6 +151,28 @@ def test_api_endpoints():
     assert ip_res["success"] is True and len(ip_res["interview_prep"]["questions"]) > 0
     print(f"[SUCCESS] POST /interview-prep PASSED ({len(ip_res['interview_prep']['questions'])} questions generated)")
 
+    # 12. Export Application Bundle (ZIP) Endpoint
+    bundle_payload = {
+        "analysis_id": analysis_id,
+        "company_name": "Stripe",
+        "job_title": "Senior Backend Engineer",
+        "cover_letter_text": cl_res["cover_letter"]["cover_letter_text"]
+    }
+    response = client.post("/export-application-bundle", json=bundle_payload, headers=auth_headers)
+    assert response.status_code == 200, f"Export application bundle failed: {response.text}"
+    assert response.headers.get("content-type") == "application/zip"
+    assert len(response.content) > 2000
+
+    import zipfile
+    from io import BytesIO
+    with zipfile.ZipFile(BytesIO(response.content)) as z:
+        names = z.namelist()
+        assert any(n.endswith(".docx") and "Resume" in n for n in names)
+        assert any(n.endswith(".docx") and "Cover_Letter" in n for n in names)
+        assert any(n.endswith(".md") and "Interview_Prep" in n for n in names)
+    print(f"[SUCCESS] POST /export-application-bundle PASSED ({len(response.content)} bytes, {len(names)} files in ZIP: {names})")
+
+
     print("\nALL FASTAPI ENDPOINT TESTS PASSED SUCCESSFULLY!")
 
 

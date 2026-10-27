@@ -259,13 +259,13 @@ Generate the complete tailored cover letter now:"""
 
     def export_docx(
         self,
-        candidate_name: str,
-        candidate_email: str,
-        candidate_phone: str,
-        candidate_location: str,
-        company_name: str,
-        job_title: str,
-        cover_letter_text: str
+        candidate_name: str = "Candidate",
+        candidate_email: str = "",
+        candidate_phone: str = "",
+        candidate_location: str = "",
+        company_name: str = "Hiring Organization",
+        job_title: str = "Target Role",
+        cover_letter_text: str = ""
     ) -> docx.Document:
         """Exports formatted DOCX document of the cover letter."""
         doc = docx.Document()

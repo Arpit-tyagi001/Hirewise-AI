@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Check, ChevronRight, FileText, Sparkles, X, BarChart3, Target, Layers, FileCheck } from 'lucide-react';
+import { AlertCircle, Check, ChevronRight, FileText, Sparkles, X, BarChart3, Target, Layers, FileCheck, Archive, RefreshCw } from 'lucide-react';
 import { AppShell } from '../components/AppShell';
 import { Button } from '../components/Button';
 import { ScoreGauge } from '../components/ScoreGauge';
@@ -7,7 +7,7 @@ import { RewriterPanel } from '../components/RewriterPanel';
 import { CoverLetterPanel } from '../components/CoverLetterPanel';
 import { InterviewPrepPanel } from '../components/InterviewPrepPanel';
 import { Page } from '../components/Navbar';
-import { AnalysisRecord, User } from '../services/api';
+import { AnalysisRecord, User, exportApplicationBundle } from '../services/api';
 
 interface ResultsProps {
   go: (p: Page) => void;
@@ -19,6 +19,36 @@ type TabKey = 'breakdown' | 'rewriter' | 'cover_letter' | 'interview_prep';
 
 export function Results({ go, analysis, currentUser }: ResultsProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('breakdown');
+  const [downloadingBundle, setDownloadingBundle] = useState(false);
+  const [bundleSuccess, setBundleSuccess] = useState(false);
+
+  const handleDownloadBundle = async () => {
+    if (!analysis) return;
+    setDownloadingBundle(true);
+    try {
+      const blob = await exportApplicationBundle(analysis.id, {
+        coverLetterText: analysis.cover_letter_data?.cover_letter_text,
+        companyName: analysis.cover_letter_data?.company_name || 'Target Company',
+        jobTitle: analysis.cover_letter_data?.job_title || 'Target Role'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = (analysis.candidate_name || 'Candidate').replace(/\s+/g, '_');
+      a.download = `HireWise_JobKit_${safeName}_${analysis.id}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setBundleSuccess(true);
+      setTimeout(() => setBundleSuccess(false), 3000);
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to download job application kit. Please try again.');
+    } finally {
+      setDownloadingBundle(false);
+    }
+  };
 
   if (!analysis) {
     return (
@@ -59,7 +89,36 @@ export function Results({ go, analysis, currentUser }: ResultsProps) {
           <h2>{analysis.candidate_name || 'Candidate Evaluation'}</h2>
           <p>{analysis.file_name} • Extracted Skills: {parsed.skills?.length || 0}</p>
         </div>
-        <div className="headActions">
+        <div className="headActions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={handleDownloadBundle}
+            disabled={downloadingBundle}
+            title="Downloads Tailored Resume (.docx) + Cover Letter (.docx) + Interview Prep Guide (.md) packaged in a single ZIP"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              background: bundleSuccess ? '#10b981' : 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: downloadingBundle ? 'not-allowed' : 'pointer',
+              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {downloadingBundle ? (
+              <RefreshCw className="animate-spin" size={15} />
+            ) : bundleSuccess ? (
+              <Check size={15} />
+            ) : (
+              <Archive size={15} />
+            )}
+            <span>{downloadingBundle ? 'Packaging Kit...' : bundleSuccess ? 'Bundle Downloaded!' : 'Download Job Kit (.zip)'}</span>
+          </button>
           <Button kind="ghost" onClick={() => go('history')}>
             View History
           </Button>
