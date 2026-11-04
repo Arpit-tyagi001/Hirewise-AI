@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy dependency manifests first — maximises Docker layer cache hits
 COPY package.json package-lock.json ./
 
-RUN npm ci --ignore-scripts
+RUN npm ci
 
 # Copy the rest of the source and compile
 COPY . .
